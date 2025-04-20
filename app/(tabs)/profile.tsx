@@ -27,7 +27,7 @@ export default function ProfileScreen() {
   };
 
   // For testing purposes, let's make the moderator button always visible
-  const isModerator = user?.email === 'sethu@gmail.com' || user?.email === 'chidhu@gmail.com';
+  const isModerator = user?.email === 'sethu@gmail.com' || user?.email === 'chidhu@gmail.com' || user?.email === 'a@gmail.com';
 
   return (
     <ScrollView style={styles.container}>

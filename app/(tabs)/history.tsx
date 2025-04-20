@@ -13,28 +13,19 @@ export default function HistoryScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
-    console.log('HistoryScreen mounted');
     fetchBookings();
   }, []);
 
   const fetchBookings = async () => {
-    console.log('Starting to fetch bookings');
     try {
       const bookingsRef = collection(db, 'bookings');
-      console.log('Collection reference created');
-      
       const querySnapshot = await getDocs(bookingsRef);
-      console.log('Query snapshot received, number of docs:', querySnapshot.size);
-      
       const bookingsData = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as BookingHistory));
-      
-      console.log('Bookings data processed:', bookingsData.length, 'bookings');
       setBookings(bookingsData);
     } catch (error) {
-      console.error('Error in fetchBookings:', error);
       Alert.alert('Error', 'Failed to fetch bookings');
     } finally {
       setLoading(false);
@@ -43,58 +34,39 @@ export default function HistoryScreen() {
   };
 
   const onRefresh = () => {
-    console.log('Refresh triggered');
     setRefreshing(true);
     fetchBookings();
   };
 
   const handleDelete = async (bookingId: string) => {
-    console.log('Starting delete process for booking:', bookingId);
-    
     try {
-      // First update the local state to remove the booking
       setBookings(prevBookings => {
         const updatedBookings = prevBookings.filter(booking => booking.id !== bookingId);
-        console.log('Local state updated. Remaining bookings:', updatedBookings.length);
         return updatedBookings;
       });
 
-      // Then delete from Firestore
       const bookingRef = doc(db, 'bookings', bookingId);
-      console.log('Attempting to delete document:', bookingId);
-      
       await deleteDoc(bookingRef);
-      console.log('Document deleted successfully');
-      
       Alert.alert('Success', 'Booking deleted successfully');
     } catch (error) {
-      console.error('Error during delete operation:', error);
-      // If there's an error, fetch the latest data to ensure consistency
       fetchBookings();
       Alert.alert('Error', 'Failed to delete booking. Please try again.');
     }
   };
 
   const confirmDelete = (bookingId: string) => {
-    console.log('Showing delete confirmation for:', bookingId);
     Alert.alert(
       'Delete Booking',
       'Are you sure you want to delete this booking?',
       [
         {
           text: 'Cancel',
-          style: 'cancel',
-          onPress: () => {
-            console.log('Delete cancelled');
-          }
+          style: 'cancel'
         },
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => {
-            console.log('Delete confirmed, proceeding with deletion');
-            handleDelete(bookingId);
-          }
+          onPress: () => handleDelete(bookingId)
         }
       ],
       { cancelable: true }
@@ -116,46 +88,40 @@ export default function HistoryScreen() {
     }
   };
 
-  const renderBookingCard = ({ item }: { item: BookingHistory }) => {
-    console.log('Rendering booking card for:', item.id);
-    return (
-      <View style={styles.card}>
-        <Image source={{ uri: item.itemImage }} style={styles.image} />
-        <View style={styles.cardContent}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.title}>{item.itemName}</Text>
-            <TouchableOpacity 
-              style={styles.deleteButton}
-              onPress={() => {
-                console.log('Delete button pressed for booking:', item.id);
-                confirmDelete(item.id);
-              }}
-            >
-              <Ionicons name="trash-outline" size={24} color="#F44336" />
-            </TouchableOpacity>
+  const renderBookingCard = ({ item }: { item: BookingHistory }) => (
+    <View style={styles.card}>
+      <Image source={{ uri: item.itemImage }} style={styles.image} />
+      <View style={styles.cardContent}>
+        <View style={styles.cardHeader}>
+          <Text style={styles.title}>{item.itemName}</Text>
+          <TouchableOpacity 
+            style={styles.deleteButton}
+            onPress={() => confirmDelete(item.id)}
+          >
+            <Ionicons name="trash-outline" size={24} color="#F44336" />
+          </TouchableOpacity>
+        </View>
+        
+        <View style={styles.datesContainer}>
+          <View style={styles.dateItem}>
+            <Ionicons name="calendar-outline" size={16} color="#666" />
+            <Text style={styles.dateText}>Start: {new Date(item.startDate).toLocaleDateString()}</Text>
           </View>
-          
-          <View style={styles.datesContainer}>
-            <View style={styles.dateItem}>
-              <Ionicons name="calendar-outline" size={16} color="#666" />
-              <Text style={styles.dateText}>Start: {new Date(item.startDate).toLocaleDateString()}</Text>
-            </View>
-            <View style={styles.dateItem}>
-              <Ionicons name="calendar-outline" size={16} color="#666" />
-              <Text style={styles.dateText}>End: {new Date(item.endDate).toLocaleDateString()}</Text>
-            </View>
-          </View>
-
-          <View style={styles.footer}>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-              <Text style={styles.statusText}>{item.status}</Text>
-            </View>
-            <Text style={styles.price}>₹{item.totalPrice?.toLocaleString() || '0'}</Text>
+          <View style={styles.dateItem}>
+            <Ionicons name="calendar-outline" size={16} color="#666" />
+            <Text style={styles.dateText}>End: {new Date(item.endDate).toLocaleDateString()}</Text>
           </View>
         </View>
+
+        <View style={styles.footer}>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{item.status}</Text>
+          </View>
+          <Text style={styles.price}>₹{item.totalPrice?.toLocaleString() || '0'}</Text>
+        </View>
       </View>
-    );
-  };
+    </View>
+  );
 
   if (loading && !refreshing) {
     return (
